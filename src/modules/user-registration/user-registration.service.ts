@@ -4,39 +4,40 @@ import {
   HttpStatus,
   Injectable,
   InternalServerErrorException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { classToPlain, plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
 import { Model } from 'mongoose';
 import {
+  ApplicantDTO,
+  InsuranceAgentDTO,
   UserDTO,
-  UserDairyFarmerDTO,
-  UserDairyInspectorDTO,
 } from 'src/constants/dto/user.dto.class';
 import { USER_ROLE } from 'src/constants/role.user.enum';
 import { User, UserSchemaClass } from 'src/schema/users/user.schema';
 import * as bcrypt from 'bcrypt';
 import {
-  UserDairyFarmer,
-  UserDairyFarmerSchemaClass,
-} from 'src/schema/users/dairy-farmer.user.schema';
-import {
-  UserDairyInspector,
-  UserDairyInspectorSchemaClass,
-} from 'src/schema/users/dairy-inspector.user.schema';
+  Applicant,
+  ApplicantSchemaClass,
+} from 'src/schema/users/applicant.schema';
 import { MailService } from 'src/utilities/mail.service';
 import { EncryptionService } from 'src/utilities/Encryption.service';
 import { TwilioService } from 'src/utilities/sms.service';
+import {
+  InsuranceAgent,
+  InsuranceAgentSchemaClass,
+} from 'src/schema/users/insurance-agent.schema';
 
 @Injectable()
 export class UserRegistrationService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(UserDairyFarmer.name)
-    private userDairyFarmerModel: Model<UserDairyFarmer>,
-    @InjectModel(UserDairyInspector.name)
-    private userDairyInspectorModel: Model<UserDairyInspector>,
+    @InjectModel(Applicant.name)
+    private applicantModel: Model<Applicant>,
+    @InjectModel(InsuranceAgent.name)
+    private insuranceAgentModel: Model<InsuranceAgent>,
     private mailService: MailService,
     private encryptionService: EncryptionService,
     private smsService: TwilioService,
@@ -45,22 +46,24 @@ export class UserRegistrationService {
   async create(user: UserDTO): Promise<any> {
     try {
       switch (user.role) {
-        case USER_ROLE.DAIRY_FARMER:
-          const userDairyFarmer = plainToClass(UserDairyFarmerDTO, user);
-          await this.validateUserDTO(userDairyFarmer, UserDairyFarmerDTO);
-          this.addDairyFarmer(userDairyFarmer);
-          return { message: 'dairy-farmer' };
-        case USER_ROLE.DAIRY_INSPECTOR:
-          const userDairyInspector = plainToClass(UserDairyInspectorDTO, user);
-          await this.validateUserDTO(userDairyInspector, UserDairyInspectorDTO);
-          this.addDairyInspector(userDairyInspector);
-          return { message: 'dairy-inspector' };
+        case USER_ROLE.INSURANCE_APPLICANT:
+          const userApplicant = plainToClass(ApplicantDTO, user);
+          await this.validateUserDTO(userApplicant, ApplicantDTO);
+          await this.addInsuranceApplicant(userApplicant);
+          return { message: 'Insurance-Applicant' };
+        case USER_ROLE.INSURANCE_AGENT:
+          const userInsuranceAgent = plainToClass(InsuranceAgentDTO, user);
+          await this.validateUserDTO(userInsuranceAgent, InsuranceAgentDTO);
+          await this.addInsuranceAgent(userInsuranceAgent);
+          return { message: 'Insurance-Agent' };
       }
       return 'ok';
     } catch (error) {
-      throw new InternalServerErrorException(
-        'An error has occurred while adding a user',
-      );
+      if (error.code === 11000) {
+        throw new ConflictException('Email or phone number already exists');
+      } else {
+        throw new InternalServerErrorException(error.response.message);
+      }
     }
   }
 
@@ -80,42 +83,35 @@ export class UserRegistrationService {
     return this.userModel.findByIdAndDelete(id).exec();
   }
 
-  private async addDairyFarmer(dairyFarmer: UserDairyFarmerDTO) {
+  private async addInsuranceApplicant(insuranceApplicant: ApplicantDTO) {
     const userData = await this.userModel.create(
       classToPlain(
         plainToClass(UserSchemaClass, {
-          ...dairyFarmer,
-          password: await bcrypt.hash(dairyFarmer.password, 10),
+          ...insuranceApplicant,
+          password: await bcrypt.hash(insuranceApplicant.password, 10),
         }),
       ),
     );
-    await this.userDairyFarmerModel.create({
-      ...classToPlain(plainToClass(UserDairyFarmerSchemaClass, dairyFarmer)),
+
+    await this.applicantModel.create({
+      ...classToPlain(plainToClass(ApplicantSchemaClass, insuranceApplicant)),
       user: userData._id,
     });
   }
 
-  private async addDairyInspector(dairyInspector: UserDairyInspectorDTO) {
-    try {
-      const userData = await this.userModel.create(
-        classToPlain(
-          plainToClass(UserSchemaClass, {
-            ...dairyInspector,
-            password: await bcrypt.hash(dairyInspector.password, 10),
-          }),
-        ),
-      );
-      await this.userDairyInspectorModel.create({
-        ...classToPlain(
-          plainToClass(UserDairyInspectorSchemaClass, dairyInspector),
-        ),
-        user: userData._id,
-      });
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'An error has occurred while adding a user',
-      );
-    }
+  private async addInsuranceAgent(insuranceAgent: InsuranceAgentDTO) {
+    const userData = await this.userModel.create(
+      classToPlain(
+        plainToClass(UserSchemaClass, {
+          ...insuranceAgent,
+          password: await bcrypt.hash(insuranceAgent.password, 10),
+        }),
+      ),
+    );
+    await this.insuranceAgentModel.create({
+      ...classToPlain(plainToClass(InsuranceAgentSchemaClass, insuranceAgent)),
+      user: userData._id,
+    });
   }
 
   async healthCheck(email: string): Promise<any> {
@@ -136,14 +132,14 @@ export class UserRegistrationService {
   }
 
   public async resetPassword(
-    mobileNo: string,
+    email: string,
   ): Promise<{ success: boolean; message: string }> {
-    if (await this.userModel.findOne({ mobileNo })) {
+    if (await this.userModel.findOne({ email })) {
       const otp: any = this.encryptionService.OTPGeneration(6);
       const expiration = new Date();
       expiration.setMinutes(expiration.getMinutes() + 10);
       await this.userModel.collection.updateOne(
-        { mobileNo },
+        { email },
         {
           $set: {
             token: {
@@ -153,13 +149,11 @@ export class UserRegistrationService {
           },
         },
       );
-      return await this.smsService.sendSms(
-        mobileNo,
-        `Hello! Your OTP to reset your password is:${otp}. If you didn't request this, please ignore this message.
-      `,
-      );
+      return this.mailService.sendEmail(email, 'reset-pass', {
+        verificationCode: otp,
+      });
     } else {
-      throw new HttpException('Unknown Number', HttpStatus.UNAUTHORIZED);
+      throw new HttpException('Unknown Email', HttpStatus.UNAUTHORIZED);
     }
   }
 

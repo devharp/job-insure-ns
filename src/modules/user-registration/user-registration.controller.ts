@@ -57,7 +57,7 @@ export class UserRegistrationController {
 
   @Post('request-reset')
   async requestReset(@Body(globalValidationPipe) payload: resetPasswordDto) {
-    return await this.userRegistrationService.resetPassword(payload.mobileNo);
+    return await this.userRegistrationService.resetPassword(payload.email);
   }
 
   @Post('/update-password')

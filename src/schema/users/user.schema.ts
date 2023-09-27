@@ -1,7 +1,6 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Exclude, Expose } from 'class-transformer';
-import { Document, HydratedDocument } from 'mongoose';
-import { USER_ROLE } from 'src/constants/role.user.enum';
+import { Document, HydratedDocument, Types } from 'mongoose';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -19,9 +18,6 @@ export class User extends Document {
   @Prop({ unique: true })
   mobileNo: string;
 
-  @Prop({ enum: USER_ROLE, default: USER_ROLE.DAIRY_FARMER })
-  role: string;
-
   @Prop({
     type: {
       token: { type: String, default: '' },
@@ -32,6 +28,24 @@ export class User extends Document {
   token?: {
     otp: string;
     expiration: Date;
+  };
+
+  @Prop({ enum: ['Applicant', 'InsuranceAgent'] })
+  role: string;
+
+  @Prop({
+    type: {
+      street: { type: String },
+      city: { type: String },
+      state: { type: String },
+      postalCode: { type: String },
+    },
+  })
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
   };
 }
 
@@ -49,8 +63,13 @@ export class UserSchemaClass {
   @Expose({ name: 'mobileNo' })
   mobileNo: string;
 
-  @Expose({ name: 'role' })
-  role: string;
+  @Expose({ name: 'address' })
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+  };
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

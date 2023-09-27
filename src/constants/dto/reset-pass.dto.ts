@@ -1,13 +1,8 @@
-import {
-  IsNotEmpty,
-  IsNumberString,
-  IsPhoneNumber,
-  IsString,
-} from 'class-validator';
+import { IsEmail, IsNotEmpty, IsNumberString, IsString } from 'class-validator';
 export class resetPasswordDto {
   @IsNotEmpty()
-  @IsPhoneNumber()
-  mobileNo: string;
+  @IsEmail()
+  email: string;
 }
 export class updatePasswordDto {
   @IsNotEmpty()
