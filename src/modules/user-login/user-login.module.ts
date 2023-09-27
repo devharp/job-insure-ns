@@ -3,15 +3,12 @@ import { UserLoginController } from './user-login.controller';
 import { UserLoginService } from './user-login.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/schema/users/user.schema';
-import {
-  UserDairyFarmer,
-  UserDairyFarmerSchema,
-} from 'src/schema/users/dairy-farmer.user.schema';
-import {
-  UserDairyInspector,
-  UserDairyInspectorSchema,
-} from 'src/schema/users/dairy-inspector.user.schema';
+import { Applicant, ApplicantSchema } from 'src/schema/users/applicant.schema';
 import { JwtModule, JwtService } from '@nestjs/jwt';
+import {
+  InsuranceAgent,
+  InsuranceAgentSchema,
+} from 'src/schema/users/insurance-agent.schema';
 
 @Module({
   imports: [
@@ -21,12 +18,12 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
         schema: UserSchema,
       },
       {
-        name: UserDairyFarmer.name,
-        schema: UserDairyFarmerSchema,
+        name: Applicant.name,
+        schema: ApplicantSchema,
       },
       {
-        name: UserDairyInspector.name,
-        schema: UserDairyInspectorSchema,
+        name: InsuranceAgent.name,
+        schema: InsuranceAgentSchema,
       },
     ]),
     JwtModule.register({

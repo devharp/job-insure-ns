@@ -3,19 +3,16 @@ import { UserRegistrationController } from './user-registration.controller';
 import { UserRegistrationService } from './user-registration.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/schema/users/user.schema';
-import {
-  UserDairyFarmer,
-  UserDairyFarmerSchema,
-} from 'src/schema/users/dairy-farmer.user.schema';
-import {
-  UserDairyInspector,
-  UserDairyInspectorSchema,
-} from 'src/schema/users/dairy-inspector.user.schema';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailService } from 'src/utilities/mail.service';
 import { TwilioService } from 'src/utilities/sms.service';
 import { EncryptionService } from 'src/utilities/Encryption.service';
+import { Applicant, ApplicantSchema } from 'src/schema/users/applicant.schema';
+import {
+  InsuranceAgent,
+  InsuranceAgentSchema,
+} from 'src/schema/users/insurance-agent.schema';
 
 @Module({
   imports: [
@@ -25,12 +22,12 @@ import { EncryptionService } from 'src/utilities/Encryption.service';
         schema: UserSchema,
       },
       {
-        name: UserDairyFarmer.name,
-        schema: UserDairyFarmerSchema,
+        name: Applicant.name,
+        schema: ApplicantSchema,
       },
       {
-        name: UserDairyInspector.name,
-        schema: UserDairyInspectorSchema,
+        name: InsuranceAgent.name,
+        schema: InsuranceAgentSchema,
       },
     ]),
     MailerModule.forRootAsync({

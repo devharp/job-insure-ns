@@ -1,5 +1,5 @@
 export enum USER_ROLE {
-  DAIRY_INSPECTOR = 'dairy-inspector',
-  DAIRY_FARMER = 'dairy-farmer',
+  INSURANCE_APPLICANT = 'Applicant',
+  INSURANCE_AGENT = 'InsuranceAgent',
   ADMIN = 'admin',
 }

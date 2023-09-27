@@ -5,9 +5,39 @@ import {
   IsOptional,
   IsEmpty,
   IsAlphanumeric,
+  IsArray,
+  IsNumber,
+  ValidateNested,
 } from 'class-validator';
 import { USER_ROLE } from '../role.user.enum';
 
+class AddressDTO {
+  @IsString()
+  street: string;
+
+  @IsString()
+  city: string;
+
+  @IsString()
+  state: string;
+
+  @IsString()
+  postalCode: string;
+}
+
+class PolicyDetailsDTO {
+  @IsNotEmpty()
+  @IsString()
+  policyType: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  premiumAmount: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  beneficiaries: BeneficiaryDTO[];
+}
 class BaseUserDTO {
   @IsNotEmpty()
   @IsString()
@@ -27,46 +57,73 @@ class BaseUserDTO {
 
   @IsNotEmpty()
   @IsString()
-  @IsIn([USER_ROLE.DAIRY_FARMER, USER_ROLE.DAIRY_INSPECTOR])
+  @IsIn([USER_ROLE.INSURANCE_AGENT, USER_ROLE.INSURANCE_APPLICANT])
   role: string;
+
+  @IsOptional()
+  address: AddressDTO;
 }
 
 export class UserDTO extends BaseUserDTO {
   @IsOptional()
-  @IsAlphanumeric()
-  dairyInspectorLicense?: string;
+  policyDetails?: PolicyDetailsDTO;
 
   @IsOptional()
-  @IsAlphanumeric()
-  agriIdCard?: string;
-}
+  @IsString()
+  currentCompany?: string;
 
-export class UserDairyFarmerDTO extends BaseUserDTO {
+  @IsOptional()
+  @IsString()
+  currentLocation?: string;
+
+  @IsOptional()
   @IsNotEmpty()
   @IsString()
-  @IsIn([USER_ROLE.DAIRY_FARMER])
+  licenseNumber?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  specializations?: string[];
+}
+
+class BeneficiaryDTO {
+  @IsString()
+  name: string;
+
+  @IsString()
+  relationship: string;
+}
+
+export class ApplicantDTO extends BaseUserDTO {
+  @IsNotEmpty()
+  @IsString()
+  @IsIn([USER_ROLE.INSURANCE_APPLICANT])
   role: string;
 
   @IsOptional()
-  @IsEmpty({ message: 'dairyInspectorLicense is not allowed' })
-  dairyInspectorLicense?: never;
-
-  @IsNotEmpty()
-  @IsAlphanumeric()
-  agriIdCard: string;
-}
-
-export class UserDairyInspectorDTO extends BaseUserDTO {
-  @IsNotEmpty()
-  @IsString()
-  @IsIn([USER_ROLE.DAIRY_INSPECTOR])
-  role: string;
+  policyDetails?: PolicyDetailsDTO;
 
   @IsOptional()
-  @IsEmpty({ message: 'agriIdCard is not allowed' })
-  agriIdCard?: never;
+  @IsString()
+  currentCompany?: string;
+
+  @IsOptional()
+  @IsString()
+  currentLocation?: string;
+}
+
+export class InsuranceAgentDTO extends BaseUserDTO {
+  @IsNotEmpty()
+  @IsString()
+  @IsIn([USER_ROLE.INSURANCE_AGENT])
+  role: string;
 
   @IsNotEmpty()
-  @IsAlphanumeric()
-  dairyInspectorLicense: string;
+  @IsString()
+  licenseNumber: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  specializations: string[];
 }
