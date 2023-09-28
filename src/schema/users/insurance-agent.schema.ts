@@ -3,12 +3,13 @@ import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Exclude, Expose } from 'class-transformer';
 import { Document, HydratedDocument, Types } from 'mongoose';
 import { User, UserSchemaClass } from './user.schema';
+import * as mongoosePaginate from 'mongoose-paginate-v2';
 
 export type InsuranceAgentDocument = HydratedDocument<InsuranceAgent>;
 
 @Schema({ collection: 'insurance-agent' })
 export class InsuranceAgent extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'user' })
+  @Prop({ type: Types.ObjectId, ref: 'User' })
   user: Types.ObjectId;
 
   @Prop()
@@ -32,3 +33,4 @@ export class InsuranceAgentSchemaClass extends UserSchemaClass {
 
 export const InsuranceAgentSchema =
   SchemaFactory.createForClass(InsuranceAgent);
+InsuranceAgentSchema.plugin(mongoosePaginate);

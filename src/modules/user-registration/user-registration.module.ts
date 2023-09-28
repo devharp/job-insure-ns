@@ -59,6 +59,6 @@ import {
     TwilioService,
     EncryptionService,
   ],
-  exports: [MailService],
+  exports: [MailService, UserRegistrationService],
 })
 export class UserRegistrationModule {}

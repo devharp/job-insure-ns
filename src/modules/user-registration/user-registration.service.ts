@@ -9,7 +9,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { classToPlain, plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
-import { Model } from 'mongoose';
+import mongoose, { Model, PaginateModel, PaginateResult } from 'mongoose';
 import {
   ApplicantDTO,
   InsuranceAgentDTO,
@@ -35,9 +35,9 @@ export class UserRegistrationService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Applicant.name)
-    private applicantModel: Model<Applicant>,
+    private applicantModel: PaginateModel<Applicant>,
     @InjectModel(InsuranceAgent.name)
-    private insuranceAgentModel: Model<InsuranceAgent>,
+    private insuranceAgentModel: PaginateModel<InsuranceAgent>,
     private mailService: MailService,
     private encryptionService: EncryptionService,
     private smsService: TwilioService,
@@ -66,13 +66,61 @@ export class UserRegistrationService {
       }
     }
   }
+  async findAll(
+    role?: string,
+    page: number = 1,
+    perPage: number = 10,
+    active?: Boolean,
+  ): Promise<PaginateResult<User>> {
+    const query: any = {};
+    const options = {
+      sort: { createdAt: -1 },
+      page: page,
+      limit: perPage,
+      populate: { path: 'user', select: '-password -token' },
+    };
+    try {
+      let users: any;
+      switch (role) {
+        case USER_ROLE.INSURANCE_APPLICANT:
+          users = await this.applicantModel.paginate(query, options);
+          break;
 
-  async findAll(): Promise<User[]> {
-    return this.userModel.find().exec();
+        case USER_ROLE.INSURANCE_AGENT:
+          if (active) {
+            query.isApproved = active;
+          }
+          users = await this.insuranceAgentModel.paginate(query, options);
+          break;
+
+        default:
+          users = await this.insuranceAgentModel.paginate(query, options);
+      }
+      return users.docs.length !== 0
+        ? users
+        : Promise.reject(
+            new HttpException('Users Not Found', HttpStatus.CONFLICT),
+          );
+    } catch (error) {
+      throw new HttpException('Failed to fetch users', HttpStatus.BAD_REQUEST);
+    }
   }
 
-  async findById(id: string): Promise<User> {
+  async findById(
+    id: string,
+    to?: string,
+  ): Promise<Applicant | InsuranceAgent | User> {
     return this.userModel.findById(id).exec();
+    /*
+    switch (to) {
+      case USER_ROLE.INSURANCE_APPLICANT:
+        return this.applicantModel.findById(id).exec();
+        break;
+
+      case USER_ROLE.INSURANCE_AGENT:
+        return this.insuranceAgentModel.findById(id).exec();
+    }
+    */
   }
 
   async update(id: string, user: User): Promise<User> {
@@ -80,7 +128,21 @@ export class UserRegistrationService {
   }
 
   async delete(id: string): Promise<User> {
-    return this.userModel.findByIdAndDelete(id).exec();
+    try {
+      const ObjectId = new mongoose.Types.ObjectId(id);
+      await this.validateExistingUser(id);
+      const deletedFromUserSchema = await this.userModel
+        .findByIdAndDelete(id)
+        .exec();
+      deletedFromUserSchema.role === USER_ROLE.INSURANCE_APPLICANT
+        ? await this.applicantModel.findOneAndDelete({ user: ObjectId }).exec()
+        : await this.insuranceAgentModel
+            .findOneAndDelete({ user: ObjectId })
+            .exec();
+      return deletedFromUserSchema;
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 
   private async addInsuranceApplicant(insuranceApplicant: ApplicantDTO) {
@@ -186,6 +248,28 @@ export class UserRegistrationService {
         'An error occurred while updating password',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+  async validateExistingUser(userId: string): Promise<Boolean> {
+    const existingUser: any = await this.findById(userId);
+    return !existingUser
+      ? Promise.reject(
+          new HttpException('User not found', HttpStatus.NOT_FOUND),
+        )
+      : true;
+  }
+  async updateApproval(id: string, approval: Boolean): Promise<InsuranceAgent> {
+    try {
+      await this.validateExistingUser(id);
+      return await this.insuranceAgentModel.findOneAndUpdate(
+        { user: new mongoose.Types.ObjectId(id) },
+        { $set: { isApproved: approval } },
+        {
+          new: true,
+        },
+      );
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 }

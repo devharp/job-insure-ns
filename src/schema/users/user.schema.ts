@@ -40,6 +40,7 @@ export class User extends Document {
       state: { type: String },
       postalCode: { type: String },
     },
+    _id: false,
   })
   address: {
     street: string;
@@ -62,6 +63,9 @@ export class UserSchemaClass {
 
   @Expose({ name: 'mobileNo' })
   mobileNo: string;
+
+  @Expose({ name: 'role' })
+  role: string;
 
   @Expose({ name: 'address' })
   address: {
