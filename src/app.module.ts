@@ -18,6 +18,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserLoginModule } from './modules/user-login/user-login.module';
+import { MiscellaneousModule } from './miscellaneous/miscellaneous.module';
+import { AdminModule } from './modules/Admin/admin.module';
 
 @Module({
   imports: [
@@ -63,6 +65,8 @@ import { UserLoginModule } from './modules/user-login/user-login.module';
     ]),
     UserRegistrationModule,
     UserLoginModule,
+    MiscellaneousModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthService, LocalStrategy, JwtStrategy],

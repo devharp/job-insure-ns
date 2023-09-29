@@ -30,16 +30,18 @@ export class UserRegistrationController {
     return this.userRegistrationService.create(user);
   }
 
+  /*
   @Get()
   async findAll(): Promise<User[]> {
     return this.userRegistrationService.findAll();
   }
+  
 
   @Get(':id')
   async findById(@Param('id') id: string): Promise<User> {
     return this.userRegistrationService.findById(id);
   }
-
+*/
   @Put(':id')
   async update(@Param('id') id: string, @Body() user: User): Promise<User> {
     return this.userRegistrationService.update(id, user);
